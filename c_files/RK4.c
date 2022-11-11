@@ -1,35 +1,36 @@
-//aquesta és la resolució del primer problema utilitzant RUNGA KUTTA ORDRE 4
+//code for RUNGA KUTTA 4-th ORDER
 #include <stdio.h>
 #include <stdlib.h>
 #include<math.h>
 #define N 300
 
-double f(double y);
-double solExacta(double x);
-void rk_4(double h, double x[N], double y[N], double xn);
-void error(double h, double x[N], double y[N], double xn);
+double g(double v);
+double f(double x, double v, double t);
+double solExacta(double t);
+void rk_4(double h, double t[N], double x[N],double v[N], double tn);
+void error(double h, double t[N], double x[N],double v[N], double tn);
 
 
 int main(){
     FILE *fp;
     FILE *fp2;
-    fp=fopen("PuntsRK4.txt","w");
+    fp=fopen("RK4-points.txt","w");
     fp2=fopen("RK4Errors.txt","w");
-    double x[N],y[N],xn,h;
+    double t[N],x[N],v[N],tn,h;
     y[0]=1;
-    x[0]=0;
-    printf("Comencem la iteració desde x0=0, fins quin x_n vols arribar?:\n");
-    scanf("%lf",&xn);
+    t[0]=0;
+    printf("Comencem la iteració desde t0=0, fins quin t_n vols arribar?:\n");
+    scanf("%lf",&tn);
     printf("Introdueix el pas h:\n");
     scanf("%lf",&h);
-    rk_4(h,x,y,xn);
-    error(h,x,y,xn);
+    rk_4(h,t,x,v,tn);
+    error(h,t,x,v,tn);
     int i;
-    for(i=0;i<=(xn/h)+h;i++){
-        fprintf(fp,"%.16G \n",y[i]);
+    for(i=0;i<=(tn/h)+h;i++){
+        fprintf(fp,"%.16G  \t %.16G \n",t[i],x[i]);
     }
-    for(i=0;i<=(xn/h)+h;i++){
-        fprintf(fp2,"%.16G  \t %.16G \n ",x[i], fabs(solExacta(x[i])-y[i]));
+    for(i=0;i<=(tn/h)+h;i++){
+        fprintf(fp2,"%.16G  \t %.16G \n ",t[i], fabs(solExacta(t[i])-x[i]));
     }
     fclose(fp);
     fclose(fp2);
@@ -37,40 +38,55 @@ int main(){
 }
 
 
-double f(double y){
-    return 0.002*y*(y-1000);
-}
-double solExacta(double x){
-    return 1000/(1+999*exp(2*x));
+double g(double v){
+    return v;
 }
 
-void rk_4(double h, double x[N], double y[N], double xn){
+double f(double x, double v, double t){ //pendent de definir
+
+}
+
+double solExacta(double t){ //pendent de canviar
+    return 1000/(1+999*exp(2*t));
+}
+
+void rk_4(double h, double t[N], double x[N], double v[N], double tn){
     int i=0;
     double k1,k2,k3,k4;
-    k1=h*f(y[0]);
-    k2=h*f(y[0]+k1/2.);
-    k3=h*f(y[0]+k2/2.);
-    k4=h*f(y[0]+k3);
-    while(x[i]<=xn+h){
+    double l1,l2,l3,l4;
+    l1=h*f(x[0],v[0],t[0]);
+    k1=h*g(v[0]);
+    l2=h*f(x[0]+k1/2.,v[0]+l1/2.,t[0]+h/2.);
+    k2=h*g(v[0]+l1/2.);
+    l3=h*f(x[0]+k2/2.,v[0]+l2/2.,t[0]+h/2.);
+    k3=h*g(v[0]+l2/2.);
+    l4=h*f(x[0]+k3,v[0]+l3,t[0]+h);
+    k4=h*g(v[0]+k3);
+    while(t[i]<=tn+h){
         i++;
-        y[i]=y[i-1]+(k1+2*k2+2*k3+k4)/6.;
-        k1=h*f(y[i]);
-        k2=h*f(y[i]+k1/2.);
-        k3=h*f(y[i]+k2/2.);
-        k4=h*f(y[i]+k3);
-        x[i]=x[i-1]+h;
+        x[i]=x[i-1]+(k1+2*k2+2*k3+k4)/6.;
+        v[i]=v[i-1]+(l1+2*l2+2*l3+l4)/6.;
+        t[i]=t[i-1]+h;
+        l1=h*f(x[i],v[i],t[i]);
+        k1=h*g(v[i]);
+        l2=h*f(x[i]+k1/2.,v[i]+l1/2.,t[i]+h/2.);
+        k2=h*g(v[i]+l1/2.);
+        l3=h*f(x[i]+k2/2.,v[i]+l2/2.,t[i]+h/2.);
+        k3=h*g(v[i]+l2/2.);
+        l4=h*f(x[i]+k3,v[i]+l3,t[i]+h);
+        k4=h*g(v[i]+k3);
     }
 }
 
-void error(double h, double x[N], double y[N], double xn){
+void error(double h, double t[N], double x[N], double v[N], double tn){
     int i=0;
     double exacta[N];
-    printf("Iteració \t x_i \t\t SolExacta \t y_i \t\t error \t \n ");
-    while(x[i]<=xn+h/10.){        
-    exacta[i]=solExacta(x[i]);
-    printf("%i \t\t %lf \t %.16G \t %.16G \t %.16G \t \n", i,x[i], exacta[i], y[i], fabs(exacta[i]-y[i]));
+    printf("Iteration \t t_i \t\t SolExacta \t y_i \t\t error \t \n ");
+    while(t[i]<=tn+h/10.){
+    exacta[i]=solExacta(t[i]);
+    printf("%i \t\t %lf \t %.16G \t %.16G \t %.16G \t \n", i,t[i], exacta[i], x[i], fabs(exacta[i]-x[i]));
     i++;
-    x[i]=x[i-1]+h;
+    t[i]=t[i-1]+h;
     }
     
 }
