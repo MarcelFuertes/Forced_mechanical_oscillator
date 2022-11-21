@@ -2,7 +2,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include<math.h>
+#define PI 3.141592653589793
 #define N 300
+#define B 2.
+#define Wo 10.
+#define M 0.1
+#define Fo 1.
+
 
 double g(double v);
 double f(double x, double v, double t);
@@ -19,8 +25,9 @@ int main(){
     double t[N],x[N],v[N],tn,h;
     y[0]=1;
     t[0]=0;
-    printf("Comencem la iteració desde t0=0, fins quin t_n vols arribar?:\n");
-    scanf("%lf",&tn);
+    //printf("Comencem la iteració desde t0=0, fins quin t_n vols arribar?:\n");
+    //scanf("%lf",&tn);
+    tn=10*PI/Wo;
     printf("Introdueix el pas h:\n");
     scanf("%lf",&h);
     rk_4(h,t,x,v,tn);
@@ -42,8 +49,9 @@ double g(double v){
     return v;
 }
 
-double f(double x, double v, double t){ //pendent de definir
-
+double f(double x, double v, double t){
+    double w=0.2*Wo;
+    return -(B/M)*v-Wo*Wo*x+(Fo/M)*cos(w*t);
 }
 
 double solExacta(double t){ //pendent de canviar
@@ -66,7 +74,7 @@ void rk_4(double h, double t[N], double x[N], double v[N], double tn){
         i++;
         x[i]=x[i-1]+(k1+2*k2+2*k3+k4)/6.;
         v[i]=v[i-1]+(l1+2*l2+2*l3+l4)/6.;
-        t[i]=t[i-1]+h;
+        t[i]=t[0]+i*h;
         l1=h*f(x[i],v[i],t[i]);
         k1=h*g(v[i]);
         l2=h*f(x[i]+k1/2.,v[i]+l1/2.,t[i]+h/2.);
