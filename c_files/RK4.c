@@ -3,46 +3,59 @@
 #include <stdlib.h>
 #include<math.h>
 #define PI 3.141592653589793
-//#define N 300
 #define B 2.
 #define Wo 10.
 #define M 0.1
 #define Fo 1.
 #define cte 0.2
+#define TOL 1e-10
 
 double g(double v);
 double f(double x, double v, double t);
 double solExacta(double t);
-void rk_4(double h, double t[N], double x[N],double v[N], double tn);
-void error(double h, double t[N], double x[N],double v[N], double tn);
+void rk_4(double h,int N, double t[N], double x[N],double v[N], double tn);
+//void error(double h, double t[N], double x[N],double v[N], double tn);
 
 
 int main(){
-    FILE *fp;
+    FILE *fp_x;
+    FILE *fp_v;
+    FILE *fp_ES;
     FILE *fp2;
-    fp=fopen("RK4-points.txt","w"); //we create the txt file that contains the points of the RK4 algorithm
+    fp_x=fopen("RK4-points_x.txt","w"); //we create the txt file that contains the points of x forthe RK4 algorithm
+    fp_v=fopen("RK4-points_v.txt","w"); //we create the txt file that contains the points of v for the RK4 algorithm
+    fp_ES=fopen("RK4-points_ES.txt","w");//we create the txt file that contains the points of the analytical solution
     fp2=fopen("RK4Errors.txt","w"); //we create the txt file that contains the exact errors.
     printf("Introduce the value for h:\n");
+    double h;
     scanf("%lf",&h);
-	double tn = 10*PI/Wo;
-	int N;
-	double value=tn/h;
-	N = (int)value+1;
-    double t[N],x[N],v[N],tn,h;
+    double tn=10.*PI/Wo;
+    int N;
+    double step=tn/h;
+    N=(int)step+1;
+    double t[N],x[N],v[N];
     x[0]=0.;
-	v[0]=1.;
+    v[0]=1.;
     t[0]=0.;
+    
 
-    rk_4(h,t,x,v,tn);
-    error(h,t,x,v,tn);
+    rk_4(h,N,t,x,v,tn);
     int i;
-    for(i=0;i<=(tn/h)+h;i++){
-        fprintf(fp,"%.16G  \t %.16G \n",t[i],x[i]);
+    for(i=1;i<=(tn/h)+h;i++){//save points (t,x(t))
+        fprintf(fp_x,"%.16G  \t %.16G \n",t[i],x[i]);
     }
-    for(i=0;i<=(tn/h)+h;i++){ //this should be in the error function
+    for(i=1;i<=(tn/h)+h;i++){//save points (t,v(t))
+        fprintf(fp_v,"%.16G  \t %.16G \n",t[i],v[i]);
+    }
+    for(i=1;i<=(tn/h)+h;i++){//save points (t,solExacta(t))
+        fprintf(fp_ES,"%.16G  \t %.16G \n",t[i],solExacta(t[i]));
+    }
+    for(i=1;i<=(tn/h)+h;i++){ //save errors
         fprintf(fp2,"%.16G  \t %.16G \n ",t[i], fabs(solExacta(t[i])-x[i]));
     }
-    fclose(fp);
+    fclose(fp_x);
+    fclose(fp_v);
+    fclose(fp_ES);
     fclose(fp2);
     return 0;
 }
@@ -58,21 +71,48 @@ double f(double x, double v, double t){
 }
 
 double solExacta(double t){
-	double lambda1,lambda2,alpha,theta;
-	double w=cte*Wo;
-	lambda1=(B+sqrt(B*B-4.*M*M*Wo*Wo))/(2.*M);
-	lambda2=(B-sqrt(B*B-4.*M*M*Wo*Wo))/(2.*M);
-	alpha=Fo/sqrt(M*M*(Wo*Wo-w*w)*(Wo*Wo-w*w)+B*B*w*w);
-	theta=atan((B*w)/(M*(Wo*Wo-w*w)));
-		
-	double c1,c2;
-	c1=(alpha*lambda2*cos(theta)+alpha*w*sin(theta)-1.)/(lambda1-lambda2);
-	c2=(alpha*lambda1*cos(theta)+alpha*w*sin(theta)-1.)/(lambda2-lambda1);
+    double alpha,theta;
+    double w=cte*Wo;
+    double inside_sqrt=B*B-4.*M*M*Wo*Wo;
+    
+    double inside_sqrt_2=M*M*(Wo*Wo-w*w)*(Wo*Wo-w*w)+B*B*w*w;
+    if(inside_sqrt_2<=TOL){//should never enter here but just in case
+        inside_sqrt_2=TOL;
+    }
+    alpha=Fo/sqrt(inside_sqrt_2);
+    if(cte==1){ //case when w_0 = w
+        theta=PI/2.; //because arctan(infty) = pi/2
+    }
+    else{
+        theta=atan((B*w)/(M*(Wo*Wo-w*w)));
+    }
+                
+        
+    if(inside_sqrt<=TOL){ //case when lambda1 and lambda2 are equal
+        double lambda;
+        lambda=-B/(2.*M);
+        double c1,c2;
+        c1=-alpha*cos(theta);
+        c2=alpha*lambda*cos(theta)-alpha*w*sin(theta)+1.;
+        return exp(lambda*t)*(c1+c2*t)+alpha*cos(w*t-theta);
+        
+        
+    }
+    else{ //case when lambda1 and lambda2 are different
+        double lambda1,lambda2;
+        lambda1=(B+sqrt(inside_sqrt))/(2.*M);
+        lambda2=(B-sqrt(inside_sqrt))/(2.*M);
 
-    return c1*exp(-t*lambda1)+c2*exp(-t*lambda2)+alpha*cos(w*t-theta);
+        double c1,c2;
+        c1=(alpha*lambda2*cos(theta)+alpha*w*sin(theta)-1.)/(lambda1-lambda2);
+        c2=(alpha*lambda1*cos(theta)+alpha*w*sin(theta)-1.)/(lambda2-lambda1);
+
+        return c1*exp(-t*lambda1)+c2*exp(-t*lambda2)+alpha*cos(w*t-theta);
+        
+    }
 }
 
-void rk_4(double h, double t[N], double x[N], double v[N], double tn){
+void rk_4(double h,int N, double t[N], double x[N], double v[N], double tn){//runge-kutta
     int i=0;
     double k1,k2,k3,k4;
     double l1,l2,l3,l4;
@@ -84,11 +124,13 @@ void rk_4(double h, double t[N], double x[N], double v[N], double tn){
     k3=h*g(v[0]+l2/2.);
     l4=h*f(x[0]+k3,v[0]+l3,t[0]+h);
     k4=h*g(v[0]+k3);
+    double aux=0.;
     while(t[i]<=tn+h){
         i++;
+        aux++;
         x[i]=x[i-1]+(k1+2*k2+2*k3+k4)/6.;
         v[i]=v[i-1]+(l1+2*l2+2*l3+l4)/6.;
-        t[i]=t[0]+i*h;
+        t[i]=t[0]+aux*h;
         l1=h*f(x[i],v[i],t[i]);
         k1=h*g(v[i]);
         l2=h*f(x[i]+k1/2.,v[i]+l1/2.,t[i]+h/2.);
@@ -99,20 +141,6 @@ void rk_4(double h, double t[N], double x[N], double v[N], double tn){
         k4=h*g(v[i]+k3);
     }
 }
-
-void error(double h, double t[N], double x[N], double v[N], double tn){//this should save the points in a txt file
-    int i=0;
-    double exacta[N];
-    printf("Iteration \t t_i \t\t SolExacta \t y_i \t\t error \t \n ");
-    while(t[i]<=tn+h/10.){
-    exacta[i]=solExacta(t[i]);
-    printf("%i \t\t %lf \t %.16G \t %.16G \t %.16G \t \n", i,t[i], exacta[i], x[i], fabs(exacta[i]-x[i]));
-    i++;
-    t[i]=t[i-1]+h;
-    }
-    
-}
-
 
 
 
