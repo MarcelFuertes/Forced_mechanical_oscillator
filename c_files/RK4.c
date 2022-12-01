@@ -3,18 +3,18 @@
 #include <stdlib.h>
 #include<math.h>
 #define PI 3.141592653589793
-#define B 2.
+#define B 0
 #define Wo 10.
 #define M 0.1
-#define Fo 1.
-#define cte 0.2
+#define Fo 0
+#define cte 0.5
 #define TOL 1e-10
 
 double g(double v);
 double f(double x, double v, double t);
 double solExacta(double t);
 void rk_4(double h,int N, double t[N], double x[N],double v[N], double tn);
-//void error(double h, double t[N], double x[N],double v[N], double tn);
+
 
 
 int main(){
@@ -71,6 +71,10 @@ double f(double x, double v, double t){
 }
 
 double solExacta(double t){
+    if(B==0){ //simple harmonic oscillator
+        return (1./Wo)*sin(Wo*t);
+        
+    }
     double alpha,theta;
     double w=cte*Wo;
     double inside_sqrt=B*B-4.*M*M*Wo*Wo;
@@ -87,28 +91,33 @@ double solExacta(double t){
         theta=atan((B*w)/(M*(Wo*Wo-w*w)));
     }
                 
-        
-    if(inside_sqrt<=TOL){ //case when lambda1 and lambda2 are equal
+        double c1,c2;
+    if(fabs(inside_sqrt)<=TOL){ //case when lambda1 and lambda2 are equal, critically damped case
         double lambda;
         lambda=-B/(2.*M);
-        double c1,c2;
         c1=-alpha*cos(theta);
         c2=alpha*lambda*cos(theta)-alpha*w*sin(theta)+1.;
         return exp(lambda*t)*(c1+c2*t)+alpha*cos(w*t-theta);
         
         
     }
-    else{ //case when lambda1 and lambda2 are different
+    else if (inside_sqrt>TOL){ //overdamped case
         double lambda1,lambda2;
         lambda1=(B+sqrt(inside_sqrt))/(2.*M);
         lambda2=(B-sqrt(inside_sqrt))/(2.*M);
-
-        double c1,c2;
         c1=(alpha*lambda2*cos(theta)+alpha*w*sin(theta)-1.)/(lambda1-lambda2);
         c2=(alpha*lambda1*cos(theta)+alpha*w*sin(theta)-1.)/(lambda2-lambda1);
 
         return c1*exp(-t*lambda1)+c2*exp(-t*lambda2)+alpha*cos(w*t-theta);
         
+    }
+    else{ //underdamped case
+        double real, imag;
+        real=-B/(2.*M);
+        imag=sqrt(fabs(B*B-4.*M*M*Wo*Wo))/(2.*M);
+        c1=-alpha*cos(theta);
+        c2=-(alpha*B*cos(theta)+2.*alpha*M*w*sin(theta)-2.*M)/(sqrt(fabs(B*B-4.*M*M*Wo*Wo)));
+        return exp(real*t)*(c1*cos(imag*t)+c2*sin(imag*t))+alpha*cos(w*t-theta);
     }
 }
 
