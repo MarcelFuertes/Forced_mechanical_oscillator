@@ -3,11 +3,11 @@
 #include <stdlib.h>
 #include<math.h>
 #define PI 3.141592653589793
-#define B 0
+#define B 2.
 #define Wo 10.
 #define M 0.1
 #define Fo 0
-#define cte 0.5
+#define cte 0.4
 #define TOL 1e-10
 
 double g(double v);
@@ -22,10 +22,12 @@ int main(){
     FILE *fp_v;
     FILE *fp_ES;
     FILE *fp2;
+    FILE *fp3;
     fp_x=fopen("RK4-points_x.txt","w"); //we create the txt file that contains the points of x forthe RK4 algorithm
     fp_v=fopen("RK4-points_v.txt","w"); //we create the txt file that contains the points of v for the RK4 algorithm
     fp_ES=fopen("RK4-points_ES.txt","w");//we create the txt file that contains the points of the analytical solution
     fp2=fopen("RK4Errors.txt","w"); //we create the txt file that contains the exact errors.
+    fp3=fopen("RK4-rel-errors.txt","w"); //we create the txt file that contains the relative errors.
     printf("Introduce the value for h:\n");
     double h;
     scanf("%lf",&h);
@@ -51,12 +53,16 @@ int main(){
         fprintf(fp_ES,"%.16G  \t %.16G \n",t[i],solExacta(t[i]));
     }
     for(i=1;i<=(tn/h)+h;i++){ //save errors
-        fprintf(fp2,"%.16G  \t %.16G \n ",t[i], fabs(solExacta(t[i])-x[i]));
+        fprintf(fp2,"%.16G  \t %.16G \n",t[i], fabs(solExacta(t[i])-x[i]));
+    }
+    for(i=1;i<=(tn/h)+h;i++){ //save errors
+        fprintf(fp3,"%.16G  \t %.16G \n",t[i], fabs(solExacta(t[i])-x[i])/fabs(solExacta(t[i])));
     }
     fclose(fp_x);
     fclose(fp_v);
     fclose(fp_ES);
     fclose(fp2);
+    fclose(fp3);
     return 0;
 }
 
