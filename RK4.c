@@ -6,7 +6,7 @@
 #define B 2.
 #define Wo 10.
 #define M 0.1
-#define Fo 0
+#define Fo 1.
 #define cte 0.4
 #define TOL 1e-10
 
